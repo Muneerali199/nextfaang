@@ -28,7 +28,6 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Enhanced smooth scroll function
   const smoothScrollTo = (elementId: string) => {
     const element = document.getElementById(elementId);
     if (element) {
@@ -39,10 +38,8 @@ const Index = () => {
     }
   };
 
-  // Track visitors to the website
   useVisitorTracker();
 
-  // Check if user has already signed up and show tour for first-time visitors
   useEffect(() => {
     const signupData = localStorage.getItem('user_signup');
     if (signupData) {
@@ -55,12 +52,11 @@ const Index = () => {
       localStorage.setItem('hasVisitedBefore', 'true');
     }
 
-    // Add smooth scroll CSS dynamically
     const style = document.createElement('style');
     style.textContent = `
       html {
         scroll-behavior: smooth;
-        scroll-padding-top: 80px; /* Adjust based on your header height */
+        scroll-padding-top: 80px;
       }
       @media (prefers-reduced-motion: reduce) {
         html {
@@ -97,7 +93,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
       {user ? (
