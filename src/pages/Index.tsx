@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useVisitorTracker } from "@/hooks/useVisitorTracker";
@@ -17,46 +17,32 @@ import { CommunitySection } from "@/components/CommunitySection";
 import { FutureScope } from "@/components/FutureScope";
 import { ContactSection } from "@/components/ContactSection";
 import { CodingArena } from "@/components/CodingArena";
-import { AITourButton } from "@/components/AiTourButton";
-import { AIChatAssistant } from "@/components/AIChatAssisstant";
-import Lenis from '@studio-freight/lenis';
+import { Chatbot } from "@/components/Chatbot";
+import { VoiceAITour } from "@/components/VoiceAITour"; // Import the VoiceAITour component
 
 const Index = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [hasSignedUp, setHasSignedUp] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showTour, setShowTour] = useState(false); // State for controlling tour visibility
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const lenisRef = useRef<Lenis | null>(null);
 
   // Track visitors to the website
   useVisitorTracker();
 
-  // Initialize Lenis smooth scrolling
-  useEffect(() => {
-    lenisRef.current = new Lenis({
-      lerp: 0.1,
-      smoothWheel: true,
-      infinite: false,
-    });
-
-    const raf = (time: number) => {
-      lenisRef.current?.raf(time);
-      requestAnimationFrame(raf);
-    };
-
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenisRef.current?.destroy();
-    };
-  }, []);
-
-  // Check if user has already signed up
+  // Check if user has already signed up and show tour for first-time visitors
   useEffect(() => {
     const signupData = localStorage.getItem('user_signup');
     if (signupData) {
       setHasSignedUp(true);
+    }
+
+    // Check if this is the user's first visit
+    const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisitedBefore) {
+      setShowTour(true);
+      localStorage.setItem('hasVisitedBefore', 'true');
     }
   }, []);
 
@@ -104,26 +90,26 @@ const Index = () => {
           <StatsSection />
           
           <section id="learning-sections" className="space-y-20 md:space-y-32">
-            <DSASection />
-            <CPSection />
+            <DSASection id="dsa-section" /> {/* Added id for tour navigation */}
+            <CPSection id="cp-section" /> {/* Added id for tour navigation */}
             <SystemDesignSection />
           </section>
 
-          <SmartToolsSection />
+          <SmartToolsSection id="smart-tools" /> {/* Added id for tour navigation */}
           <OpenSourceSection />
-          <CommunitySection />
+          <CommunitySection id="community" /> {/* Added id for tour navigation */}
           <FutureScope />
-          <ContactSection />
+          <ContactSection id="contact" /> {/* Added id for tour navigation */}
         </main>
       )}
       
-      {/* AI Assistant Components */}
-      <AIChatAssistant 
-        showChatbot={showChatbot}
-        onClose={() => setShowChatbot(false)}
-      />
+      {/* Chatbot Component */}
+      <Chatbot />
       
-      <AITourButton />
+      {/* Voice AI Tour - conditionally rendered */}
+      {showTour && (
+        <VoiceAITour onClose={() => setShowTour(false)} />
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mic, MicOff, Volume2, VolumeX, X, Play, Pause } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import Lenis from '@studio-freight/lenis';
 
 interface VoiceAITourProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ export const VoiceAITour = ({ onClose }: VoiceAITourProps) => {
   
   const recognitionRef = useRef<any>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
   const tourSteps = [
     {
@@ -52,6 +54,22 @@ export const VoiceAITour = ({ onClose }: VoiceAITourProps) => {
   ];
 
   useEffect(() => {
+    // Initialize Lenis for smooth scrolling
+    lenisRef.current = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1.2,
+      touchMultiplier: 1.5,
+    });
+
+    const raf = (time: number) => {
+      lenisRef.current?.raf(time);
+      requestAnimationFrame(raf);
+    };
+
+    requestAnimationFrame(raf);
+
     // Initialize speech recognition
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -94,6 +112,7 @@ export const VoiceAITour = ({ onClose }: VoiceAITourProps) => {
       if (speechRef.current) {
         speechSynthesis.cancel();
       }
+      lenisRef.current?.destroy();
     };
   }, []);
 
@@ -115,8 +134,12 @@ export const VoiceAITour = ({ onClose }: VoiceAITourProps) => {
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (element && lenisRef.current) {
+      lenisRef.current.scrollTo(element, {
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        offset: -100, // Adjust this value based on your header height
+      });
     }
   };
 

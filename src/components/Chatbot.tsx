@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Bot, Send, X, MessageCircle, Minimize2, Mic, MicOff, Volume2, VolumeX }
 
 export const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -20,7 +20,9 @@ export const Chatbot = () => {
 
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Initialize speech recognition and synthesis
   useEffect(() => {
     // Initialize speech recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -36,7 +38,8 @@ export const Chatbot = () => {
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = () => {
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
         setIsListening(false);
       };
 
@@ -58,10 +61,20 @@ export const Chatbot = () => {
     };
   }, []);
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
-      setIsListening(true);
-      recognitionRef.current.start();
+      try {
+        setIsListening(true);
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        setIsListening(false);
+      }
     }
   };
 
@@ -73,7 +86,7 @@ export const Chatbot = () => {
   };
 
   const speakText = (text: string) => {
-    if (synthRef.current && !isSpeaking) {
+    if (synthRef.current) {
       // Cancel any ongoing speech
       synthRef.current.cancel();
       
@@ -100,14 +113,17 @@ export const Chatbot = () => {
   const handleSendMessage = () => {
     if (!message.trim()) return;
 
+    // Add user message
     const userMessage = { type: "user", content: message };
     setMessages(prev => [...prev, userMessage]);
+    setMessage("");
 
-    // Simple bot responses
+    // Simulate bot response after a delay
     setTimeout(() => {
       let botResponse = "";
       const lowerMessage = message.toLowerCase();
 
+      // Simple response logic
       if (lowerMessage.includes("roadmap") || lowerMessage.includes("path")) {
         botResponse = "Great question! For CP roadmap, I recommend: 1) Start with basic DSA (Arrays, Strings) 2) Learn sorting/searching 3) Master recursion and DP 4) Practice on Codeforces regularly. Would you like specific resources for any topic?";
       } else if (lowerMessage.includes("codeforces") || lowerMessage.includes("cf")) {
@@ -124,44 +140,92 @@ export const Chatbot = () => {
 
       const botMessage = { type: "bot", content: botResponse };
       setMessages(prev => [...prev, botMessage]);
+      
+      // Auto-speak the response
+      speakText(botResponse);
     }, 1000);
-
-    setMessage("");
   };
 
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true);
+            setIsMinimized(false);
+          }}
           size="lg"
-          className="rounded-full h-16 w-16 shadow-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 button-3d pulse-glow"
+          className="rounded-full h-16 w-16 shadow-2xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
         >
           <MessageCircle className="h-8 w-8" />
+          <span className="sr-only">Open Chat</span>
         </Button>
       </div>
     );
   }
 
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 w-72">
+        <Card className="shadow-2xl border-2 border-red-500/30 bg-gradient-to-br from-red-500/5 to-red-600/5">
+          <CardHeader className="pb-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Bot className="h-5 w-5" />
+                <CardTitle className="text-lg font-bold">NEXTFANG AI</CardTitle>
+              </div>
+              <div className="flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setIsMinimized(false)}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:bg-white/20"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[500px]">
-      <Card className="h-full flex flex-col shadow-2xl card-3d glass-morphism border-2 border-red-500/30 bg-gradient-to-br from-red-500/5 to-red-600/5">
+    <div className="fixed bottom-6 right-6 z-50 w-96">
+      <Card className="h-[500px] flex flex-col shadow-2xl border-2 border-red-500/30 bg-gradient-to-br from-red-500/5 to-red-600/5">
         <CardHeader className="pb-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-full pulse-3d">
-                <Bot className="h-5 w-5" />
-              </div>
+              <Bot className="h-5 w-5" />
               <div>
                 <CardTitle className="text-lg font-bold">NEXTFANG AI Assistant</CardTitle>
                 <div className="text-xs opacity-90">Voice-Enabled • Powered by AI</div>
               </div>
             </div>
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={() => setIsOpen(false)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white hover:bg-white/20"
+                onClick={() => setIsMinimized(true)}
+              >
                 <Minimize2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" onClick={() => setIsOpen(false)}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white hover:bg-white/20"
+                onClick={() => setIsOpen(false)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -172,7 +236,7 @@ export const Chatbot = () => {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4 scroll-smooth">
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -180,30 +244,34 @@ export const Chatbot = () => {
               >
                 <div className="max-w-[80%]">
                   <div
-                    className={`p-3 rounded-2xl text-sm slide-in-3d ${
+                    className={`p-3 rounded-2xl text-sm ${
                       msg.type === "user"
                         ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
-                        : "bg-gradient-to-r from-muted to-muted/80 glass-morphism"
+                        : "bg-gray-100 dark:bg-gray-800"
                     }`}
-                    style={{animationDelay: `${index * 0.1}s`}}
                   >
                     {msg.content}
                   </div>
                   {msg.type === "bot" && (
-                    <div className="flex justify-start mt-2">
+                    <div className="flex justify-start mt-1">
                       <Button
                         size="sm"
                         variant="ghost"
                         className="h-6 w-6 p-0 hover:bg-red-500/20"
                         onClick={() => isSpeaking ? stopSpeaking() : speakText(msg.content)}
                       >
-                        {isSpeaking ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                        {isSpeaking ? (
+                          <VolumeX className="h-3 w-3 text-red-500" />
+                        ) : (
+                          <Volume2 className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="flex gap-2">
@@ -212,14 +280,14 @@ export const Chatbot = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Ask about CP, DSA, FANG... or speak!"
-                className="text-sm pr-12 bg-gradient-to-r from-background to-muted/50 border-red-500/30 focus:border-red-500"
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                className="text-sm pr-12 bg-background border-red-500/30 focus:border-red-500"
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
               />
               <Button
                 size="sm"
                 variant="ghost"
                 className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 ${
-                  isListening ? 'text-red-500 pulse-glow' : 'hover:bg-red-500/20'
+                  isListening ? 'text-red-500' : 'hover:bg-red-500/20'
                 }`}
                 onClick={isListening ? stopListening : startListening}
               >
@@ -228,8 +296,9 @@ export const Chatbot = () => {
             </div>
             <Button 
               size="sm" 
-              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 button-3d"
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
               onClick={handleSendMessage}
+              disabled={!message.trim()}
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -237,7 +306,7 @@ export const Chatbot = () => {
           
           {isListening && (
             <div className="text-center mt-2">
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30 pulse-3d">
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
                 🎤 Listening...
               </Badge>
             </div>
