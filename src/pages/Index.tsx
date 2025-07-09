@@ -18,15 +18,26 @@ import { FutureScope } from "@/components/FutureScope";
 import { ContactSection } from "@/components/ContactSection";
 import { CodingArena } from "@/components/CodingArena";
 import { Chatbot } from "@/components/Chatbot";
-import { VoiceAITour } from "@/components/VoiceAITour"; // Import the VoiceAITour component
+import { VoiceAITour } from "@/components/VoiceAITour";
 
 const Index = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [hasSignedUp, setHasSignedUp] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [showTour, setShowTour] = useState(false); // State for controlling tour visibility
+  const [showTour, setShowTour] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Enhanced smooth scroll function
+  const smoothScrollTo = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
 
   // Track visitors to the website
   useVisitorTracker();
@@ -38,19 +49,36 @@ const Index = () => {
       setHasSignedUp(true);
     }
 
-    // Check if this is the user's first visit
     const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
     if (!hasVisitedBefore) {
       setShowTour(true);
       localStorage.setItem('hasVisitedBefore', 'true');
     }
+
+    // Add smooth scroll CSS dynamically
+    const style = document.createElement('style');
+    style.textContent = `
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 80px; /* Adjust based on your header height */
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  // Show signup form if user hasn't signed up and isn't authenticated
   if (!hasSignedUp && !user) {
     return (
       <>
@@ -73,7 +101,6 @@ const Index = () => {
       <Navbar />
       
       {user ? (
-        // Authenticated user view
         <div className="container mx-auto px-4 py-8">
           <div className="mb-8 text-center">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -84,32 +111,43 @@ const Index = () => {
           <CodingArena />
         </div>
       ) : (
-        // Public landing page
         <main className="space-y-20 md:space-y-32">
-          <HeroSection />
+          <div id="hero">
+            <HeroSection />
+          </div>
+          
           <StatsSection />
           
           <section id="learning-sections" className="space-y-20 md:space-y-32">
-            <DSASection id="dsa-section" /> {/* Added id for tour navigation */}
-            <CPSection id="cp-section" /> {/* Added id for tour navigation */}
+            <div id="dsa-section">
+              <DSASection />
+            </div>
+            <div id="cp-section">
+              <CPSection />
+            </div>
             <SystemDesignSection />
           </section>
 
-          <SmartToolsSection id="smart-tools" /> {/* Added id for tour navigation */}
+          <div id="smart-tools">
+            <SmartToolsSection />
+          </div>
+          
           <OpenSourceSection />
-          <CommunitySection id="community" /> {/* Added id for tour navigation */}
+          
+          <div id="community">
+            <CommunitySection />
+          </div>
+          
           <FutureScope />
-          <ContactSection id="contact" /> {/* Added id for tour navigation */}
+          
+          <div id="contact">
+            <ContactSection />
+          </div>
         </main>
       )}
       
-      {/* Chatbot Component */}
       <Chatbot />
-      
-      {/* Voice AI Tour - conditionally rendered */}
-      {showTour && (
-        <VoiceAITour onClose={() => setShowTour(false)} />
-      )}
+      {showTour && <VoiceAITour onClose={() => setShowTour(false)} />}
     </div>
   );
 };
